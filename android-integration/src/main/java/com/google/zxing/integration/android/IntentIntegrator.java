@@ -16,24 +16,24 @@
 
 package com.google.zxing.integration.android;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Fragment;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>A utility class which helps ease integration with Barcode Scanner via {@link Intent}s. This is a simple
@@ -109,7 +109,7 @@ import android.util.Log;
  */
 public class IntentIntegrator {
 
-  public static final int REQUEST_CODE = 0x0000c0de; // Only use bottom 16 bits
+  public static final int REQUEST_CODE = 0x00000138; // Only use bottom 16 bits
   private static final String TAG = IntentIntegrator.class.getSimpleName();
 
   public static final String DEFAULT_TITLE = "Install Barcode Scanner?";
@@ -140,7 +140,6 @@ public class IntentIntegrator {
       );
   
   private final Activity activity;
-  private final Fragment fragment;
 
   private String title;
   private String message;
@@ -154,18 +153,6 @@ public class IntentIntegrator {
    */
   public IntentIntegrator(Activity activity) {
     this.activity = activity;
-    this.fragment = null;
-    initializeConfiguration();
-  }
-
-  /**
-   * @param fragment {@link Fragment} invoking the integration.
-   *  {@link #startActivityForResult(Intent, int)} will be called on the {@link Fragment} instead
-   *  of an {@link Activity}
-   */
-  public IntentIntegrator(Fragment fragment) {
-    this.activity = fragment.getActivity();
-    this.fragment = fragment;
     initializeConfiguration();
   }
 
@@ -336,11 +323,7 @@ public class IntentIntegrator {
    * @see android.app.Fragment#startActivityForResult(Intent, int)
    */
   protected void startActivityForResult(Intent intent, int code) {
-    if (fragment == null) {
       activity.startActivityForResult(intent, code);
-    } else {
-      fragment.startActivityForResult(intent, code);
-    }
   }
   
   private String findTargetAppPackage(Intent intent) {
@@ -384,11 +367,7 @@ public class IntentIntegrator {
         Uri uri = Uri.parse("market://details?id=" + packageName);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         try {
-          if (fragment == null) {
             activity.startActivity(intent);
-          } else {
-            fragment.startActivity(intent);
-          }
         } catch (ActivityNotFoundException anfe) {
           // Hmm, market is not installed
           Log.w(TAG, "Google Play is not installed; cannot install " + packageName);
@@ -466,13 +445,13 @@ public class IntentIntegrator {
     }
     intent.setPackage(targetAppPackage);
     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-    attachMoreExtras(intent);
-    if (fragment == null) {
-      activity.startActivity(intent);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
     } else {
-      fragment.startActivity(intent);
+      intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
     }
+    attachMoreExtras(intent);
+    activity.startActivity(intent);
     return null;
   }
   
